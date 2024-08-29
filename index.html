@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Web App</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        .button-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+        }
+        .button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            margin: 5px 0;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .controls {
+            position: absolute;
+            top: 70px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .controls input {
+            width: 60px;
+            margin: 0 5px;
+        }
+    </style>
+    <!-- A-Frame -->
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <!-- AR.js -->
+    <script src="https://cdn.rawgit.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <!-- A-Frame Scene -->
+    <a-scene
+        embedded
+        arjs="sourceType: webcam; trackingMethod: best; debugUIEnabled: false;"
+        renderer="logarithmicDepthBuffer: true;"
+        vr-mode-ui="enabled: false;"
+    >
+        <!-- Assets -->
+        <a-assets>
+            <a-asset-item id="model" src="./assets/model.glb"></a-asset-item>
+        </a-assets>
+
+        <!-- Marker -->
+        <a-marker type="pattern" url="./assets/marker.patt">
+            <a-entity
+                id="ar-model"
+                gltf-model="#model"
+                scale="1 1 1"
+                position="0 0 0"
+                rotation="0 0 0"
+                class="clickable"
+            ></a-entity>
+        </a-marker>
+
+        <!-- Camera -->
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <!-- Controls -->
+    <div class="button-container">
+        <button class="button" id="fix-button">固定</button>
+        <button class="button" id="reset-button">リセット</button>
+    </div>
+
+    <div class="controls">
+        <label>X: <input type="number" id="x" value="0" step="0.01" min="-5" max="5"></label>
+        <label>Y: <input type="number" id="y" value="0" step="0.01" min="-5" max="5"></label>
+        <label>Z: <input type="number" id="z" value="0" step="0.01" min="-5" max="5"></label>
+        <label>Size: <input type="number" id="size" value="1" step="0.1" min="0.1" max="10"></label>
+        <label>Rotation: <input type="number" id="rotation" value="0" step="1" min="0" max="360"></label>
+    </div>
+
+    <script>
+        const modelEntity = document.querySelector('#ar-model');
+        const xInput = document.querySelector('#x');
+        const yInput = document.querySelector('#y');
+        const zInput = document.querySelector('#z');
+        const sizeInput = document.querySelector('#size');
+        const rotationInput = document.querySelector('#rotation');
+        const fixButton = document.querySelector('#fix-button');
+        const resetButton = document.querySelector('#reset-button');
+
+        let fixed = false;
+        let fixedAttributes = {};
+
+        // Update model position, size, and rotation
+        function updateModel() {
+            if (modelEntity) {
+                modelEntity.setAttribute('position', `${xInput.value} ${yInput.value} ${zInput.value}`);
+                modelEntity.setAttribute('scale', `${sizeInput.value} ${sizeInput.value} ${sizeInput.value}`);
+                modelEntity.setAttribute('rotation', `0 ${rotationInput.value} 0`);
+            }
+        }
+
+        xInput.addEventListener('input', updateModel);
+        yInput.addEventListener('input', updateModel);
+        zInput.addEventListener('input', updateModel);
+        sizeInput.addEventListener('input', updateModel);
+        rotationInput.addEventListener('input', updateModel);
+
+        fixButton.addEventListener('click', () => {
+            if (modelEntity) {
+                fixedAttributes = {
+                    position: modelEntity.getAttribute('position'),
+                    scale: modelEntity.getAttribute('scale'),
+                    rotation: modelEntity.getAttribute('rotation')
+                };
+                fixed = true;
+                announce('モデルが固定されました');
+            }
+        });
+
+        resetButton.addEventListener('click', () => {
+            if (modelEntity) {
+                modelEntity.setAttribute('position', fixedAttributes.position || '0 0 0');
+                modelEntity.setAttribute('scale', fixedAttributes.scale || '1 1 1');
+                modelEntity.setAttribute('rotation', fixedAttributes.rotation || '0 0 0');
+                updateModel();
+            }
+        });
+
+        function announce(message) {
+            const announcement = document.createElement('div');
+            announcement.style.position = 'absolute';
+            announcement.style.bottom = '10px';
+            announcement.style.left = '10px';
+            announcement.style.padding = '10px';
+            announcement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            announcement.style.color = 'white';
+            announcement.innerText = message;
+            document.body.appendChild(announcement);
+            setTimeout(() => {
+                announcement.remove();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
